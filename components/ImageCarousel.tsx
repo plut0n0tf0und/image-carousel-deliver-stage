@@ -55,24 +55,28 @@ export function ImageCarousel() {
   // Drag handlers — pointer events work for mouse + touch, all logic in refs (no re-render during drag)
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!carouselRef.current) return;
+    if (e.button !== 0) return; // left click only
     if (rafId.current) cancelAnimationFrame(rafId.current);
-    // Capture pointer so move/up fire even if cursor leaves element
-    carouselRef.current.setPointerCapture(e.pointerId);
-    dragActive.current = true;
-    setIsDragging(true);
+    dragActive.current = false; // only activate on actual move
     dragDistance.current = 0;
     startX.current = e.clientX;
     scrollLeftRef.current = carouselRef.current.scrollLeft;
     lastX.current = e.clientX;
     lastT.current = performance.now();
     velX.current = 0;
-    carouselRef.current.style.scrollSnapType = "none";
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragActive.current || !carouselRef.current) return;
-    e.preventDefault();
+    if (!carouselRef.current) return;
     const walk = e.clientX - startX.current;
+    // Only start drag after moving 4px — preserves clean clicks
+    if (!dragActive.current && Math.abs(walk) < 4) return;
+    if (!dragActive.current) {
+      dragActive.current = true;
+      setIsDragging(true);
+      carouselRef.current.style.scrollSnapType = "none";
+    }
+    e.preventDefault();
     dragDistance.current = Math.abs(walk);
     carouselRef.current.scrollLeft = scrollLeftRef.current - walk;
 
@@ -84,7 +88,8 @@ export function ImageCarousel() {
   };
 
   const handlePointerUp = () => {
-    if (!dragActive.current || !carouselRef.current) return;
+    if (!carouselRef.current) return;
+    if (!dragActive.current) return; // was a clean click, do nothing
     dragActive.current = false;
     setIsDragging(false);
 
@@ -194,7 +199,7 @@ export function ImageCarousel() {
             >
               {/* Card */}
               <div
-                onClick={() => !dragActive.current && dragDistance.current < 5 && openLightbox(index)}
+                onClick={() => dragDistance.current < 4 && openLightbox(index)}
                 className={cn(
                   "relative rounded-2xl overflow-hidden glass transition-smooth",
                   "hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/5"
