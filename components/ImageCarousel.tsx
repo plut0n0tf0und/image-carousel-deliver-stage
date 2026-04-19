@@ -194,7 +194,7 @@ export function ImageCarousel() {
             >
               {/* Card */}
               <div
-                onClick={() => !isDragging && dragDistance.current < 5 && openLightbox(index)}
+                onClick={() => !dragActive.current && dragDistance.current < 5 && openLightbox(index)}
                 className={cn(
                   "relative rounded-2xl overflow-hidden glass transition-smooth",
                   "hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/5"
