@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageItem } from "@/lib/images";
@@ -25,14 +25,24 @@ export function Lightbox({
   hasPrev,
   hasNext,
 }: LightboxProps) {
+  const [zoomed, setZoomed] = useState(false);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && hasPrev) onPrev();
-      if (e.key === "ArrowRight" && hasNext) onNext();
+      if (e.key === "Escape") {
+        if (zoomed) setZoomed(false);
+        else onClose();
+      }
+      if (e.key === "ArrowLeft" && hasPrev && !zoomed) onPrev();
+      if (e.key === "ArrowRight" && hasNext && !zoomed) onNext();
     },
-    [onClose, onPrev, onNext, hasPrev, hasNext]
+    [onClose, onPrev, onNext, hasPrev, hasNext, zoomed]
   );
+
+  // Reset zoom when image changes
+  useEffect(() => {
+    setZoomed(false);
+  }, [image]);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +66,7 @@ export function Lightbox({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={onClose}
+          onClick={() => zoomed ? setZoomed(false) : onClose()}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" />
@@ -104,21 +114,35 @@ export function Lightbox({
             className="relative z-10 max-w-[90vw] max-h-[85vh] flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <motion.img
               src={image.url}
               alt={image.caption}
-              className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl"
+              animate={{ scale: zoomed ? 2 : 1 }}
+              transition={{ type: "spring", damping: 20, stiffness: 200 }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setZoomed((z) => !z);
+              }}
+              className={cn(
+                "max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl",
+                zoomed ? "cursor-zoom-out" : "cursor-zoom-in"
+              )}
+              draggable={false}
             />
 
             {/* Caption */}
-            <div className="mt-6 text-center">
+            <motion.div
+              animate={{ opacity: zoomed ? 0 : 1 }}
+              transition={{ duration: 0.2 }}
+              className="mt-6 text-center"
+            >
               <h3 className="text-xl font-semibold text-white mb-2">
                 {image.caption}
               </h3>
               <p className="text-white/60 text-sm max-w-md">
                 {image.description}
               </p>
-            </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}
