@@ -12,6 +12,7 @@ export function ImageCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const dragActive = useRef(false);       // ref copy — no re-render lag
   const dragDistance = useRef(0);
   const startX = useRef(0);
   const scrollLeftRef = useRef(0);
@@ -42,7 +43,8 @@ export function ImageCarousel() {
 
   const scrollToCard = (index: number) => {
     if (carouselRef.current) {
-      const cardWidth = 400 + 24; // card width + gap
+      const firstCard = carouselRef.current.children[0] as HTMLElement;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 24 : 424;
       carouselRef.current.scrollTo({
         left: index * cardWidth,
         behavior: "smooth",
@@ -85,8 +87,9 @@ export function ImageCarousel() {
     setIsDragging(false);
 
     const carousel = carouselRef.current;
-    const cardWidth = 400 + 24;
-    const momentum = velX.current * 120; // project forward
+    const firstCard = carousel.children[0] as HTMLElement;
+    const cardWidth = firstCard ? firstCard.offsetWidth + 24 : 424;
+    const momentum = velX.current * 120;
     const targetScroll = carousel.scrollLeft - momentum;
     const newIndex = Math.max(0, Math.min(
       Math.round(targetScroll / cardWidth),
@@ -106,7 +109,8 @@ export function ImageCarousel() {
     if (!carousel) return;
 
     const handleScroll = () => {
-      const cardWidth = 400 + 24;
+      const firstCard = carousel.children[0] as HTMLElement;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 24 : 424;
       const newIndex = Math.round(carousel.scrollLeft / cardWidth);
       setActiveIndex(Math.max(0, Math.min(newIndex, images.length - 1)));
     };
