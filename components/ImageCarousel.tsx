@@ -122,7 +122,7 @@ export function ImageCarousel() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="text-center mb-12"
+        className="text-center mb-6"
       >
         <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
           Delivered Screens
@@ -135,31 +135,23 @@ export function ImageCarousel() {
       {/* Carousel Container */}
       <div className="relative">
         {/* Navigation Arrows */}
-        <button
-          onClick={() => scrollToCard(Math.max(0, activeIndex - 1))}
-          disabled={activeIndex === 0}
-          className={cn(
-            "absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all",
-            activeIndex === 0
-              ? "opacity-40 cursor-not-allowed"
-              : "hover:scale-110"
-          )}
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
+        {activeIndex > 0 && (
+          <button
+            onClick={() => scrollToCard(activeIndex - 1)}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all hover:scale-110"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+        )}
 
-        <button
-          onClick={() => scrollToCard(Math.min(images.length - 1, activeIndex + 1))}
-          disabled={activeIndex === images.length - 1}
-          className={cn(
-            "absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all",
-            activeIndex === images.length - 1
-              ? "opacity-40 cursor-not-allowed"
-              : "hover:scale-110"
-          )}
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
+        {activeIndex < images.length - 1 && (
+          <button
+            onClick={() => scrollToCard(activeIndex + 1)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all hover:scale-110"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+        )}
 
         {/* Carousel */}
         <div
