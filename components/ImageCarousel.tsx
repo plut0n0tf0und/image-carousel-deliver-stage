@@ -52,51 +52,52 @@ export function ImageCarousel() {
     }
   };
 
-  // Mouse drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Drag handlers — pointer events work for mouse + touch, all logic in refs (no re-render during drag)
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (!carouselRef.current) return;
     if (rafId.current) cancelAnimationFrame(rafId.current);
+    // Capture pointer so move/up fire even if cursor leaves element
+    carouselRef.current.setPointerCapture(e.pointerId);
+    dragActive.current = true;
     setIsDragging(true);
     dragDistance.current = 0;
-    startX.current = e.pageX - carouselRef.current.offsetLeft;
+    startX.current = e.clientX;
     scrollLeftRef.current = carouselRef.current.scrollLeft;
-    lastX.current = e.pageX;
+    lastX.current = e.clientX;
     lastT.current = performance.now();
     velX.current = 0;
-    // Disable snap during drag for smooth feel
     carouselRef.current.style.scrollSnapType = "none";
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !carouselRef.current) return;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragActive.current || !carouselRef.current) return;
     e.preventDefault();
-    const x = e.pageX - carouselRef.current.offsetLeft;
-    const walk = x - startX.current;
+    const walk = e.clientX - startX.current;
     dragDistance.current = Math.abs(walk);
     carouselRef.current.scrollLeft = scrollLeftRef.current - walk;
 
     const now = performance.now();
     const dt = now - lastT.current;
-    if (dt > 0) velX.current = (e.pageX - lastX.current) / dt;
-    lastX.current = e.pageX;
+    if (dt > 0) velX.current = (e.clientX - lastX.current) / dt;
+    lastX.current = e.clientX;
     lastT.current = now;
   };
 
-  const handleMouseUp = () => {
-    if (!carouselRef.current) return;
+  const handlePointerUp = () => {
+    if (!dragActive.current || !carouselRef.current) return;
+    dragActive.current = false;
     setIsDragging(false);
 
     const carousel = carouselRef.current;
     const firstCard = carousel.children[0] as HTMLElement;
     const cardWidth = firstCard ? firstCard.offsetWidth + 24 : 424;
-    const momentum = velX.current * 120;
+    const momentum = velX.current * 100;
     const targetScroll = carousel.scrollLeft - momentum;
     const newIndex = Math.max(0, Math.min(
       Math.round(targetScroll / cardWidth),
       images.length - 1
     ));
 
-    // Re-enable snap then scroll
     carousel.style.scrollSnapType = "x mandatory";
     setActiveIndex(newIndex);
     scrollToCard(newIndex);
@@ -160,17 +161,19 @@ export function ImageCarousel() {
         {/* Carousel */}
         <div
           ref={carouselRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           className={cn(
-            "flex gap-6 overflow-x-auto px-8 py-4 hide-scrollbar cursor-grab",
-            isDragging && "cursor-grabbing"
+            "flex gap-6 overflow-x-auto px-8 py-4 hide-scrollbar",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
           )}
           style={{
             scrollSnapType: "x mandatory",
             userSelect: "none",
+            WebkitUserSelect: "none",
+            touchAction: "pan-y",
           }}
         >
           {images.map((image, index) => (
