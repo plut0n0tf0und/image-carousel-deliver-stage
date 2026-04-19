@@ -247,20 +247,17 @@ export function ImageCarousel() {
         </div>
       </div>
 
-      {/* Indicators */}
-      <div className="flex justify-center gap-2 mt-8">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => scrollToCard(index)}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              activeIndex === index
-                ? "w-8 bg-white"
-                : "w-1.5 bg-white/30 hover:bg-white/50"
-            )}
+      {/* Progress Track Indicator */}
+      <div className="flex justify-center mt-6 px-8">
+        <div className="w-48 h-[3px] rounded-full bg-white/10 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-white/70"
+            animate={{
+              width: `${((activeIndex + 1) / images.length) * 100}%`,
+            }}
+            transition={{ type: "spring", damping: 20, stiffness: 200 }}
           />
-        ))}
+        </div>
       </div>
 
       {/* Lightbox */}
