@@ -14,6 +14,7 @@ export function ImageCarousel() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const dragDistance = useRef(0);
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -49,6 +50,7 @@ export function ImageCarousel() {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!carouselRef.current) return;
     setIsDragging(true);
+    dragDistance.current = 0;
     setStartX(e.pageX - carouselRef.current.offsetLeft);
     setScrollLeft(carouselRef.current.scrollLeft);
   };
@@ -58,6 +60,7 @@ export function ImageCarousel() {
     e.preventDefault();
     const x = e.pageX - carouselRef.current.offsetLeft;
     const walk = (x - startX) * 1.5;
+    dragDistance.current = Math.abs(x - startX);
     carouselRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -146,6 +149,7 @@ export function ImageCarousel() {
           )}
           style={{
             scrollSnapType: "x mandatory",
+            userSelect: "none",
           }}
         >
           {images.map((image, index) => (
@@ -166,7 +170,7 @@ export function ImageCarousel() {
             >
               {/* Card */}
               <div
-                onClick={() => openLightbox(index)}
+                onClick={() => !isDragging && dragDistance.current < 5 && openLightbox(index)}
                 className={cn(
                   "relative rounded-2xl overflow-hidden glass transition-smooth",
                   "hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/5"
