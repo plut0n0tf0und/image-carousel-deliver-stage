@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { images, ImageItem } from "@/lib/images";
 import { Lightbox } from "./Lightbox";
 import { cn } from "@/lib/utils";
-
-const CARD_WIDTH = 424; // 400px card + 24px gap
 
 export function ImageCarousel() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -16,32 +14,9 @@ export function ImageCarousel() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [cardsPerPage, setCardsPerPage] = useState(3);
-  const dragStartTime = useRef(0);
-  const hasDragged = useRef(false);
-
-  // Calculate how many cards fit on screen
-  useEffect(() => {
-    const updateCardsPerPage = () => {
-      if (carouselRef.current) {
-        const containerWidth = carouselRef.current.offsetWidth - 64; // minus padding
-        const count = Math.floor(containerWidth / CARD_WIDTH);
-        setCardsPerPage(Math.max(1, count));
-      }
-    };
-    
-    updateCardsPerPage();
-    window.addEventListener('resize', updateCardsPerPage);
-    return () => window.removeEventListener('resize', updateCardsPerPage);
-  }, []);
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index);
-  };
-
-  const handleCardMouseDown = () => {
-    // Reset drag state when starting a fresh click on a card
-    hasDragged.current = false;
   };
 
   const closeLightbox = () => {
@@ -60,58 +35,40 @@ export function ImageCarousel() {
     }
   };
 
-  const scrollToPage = useCallback((pageIndex: number) => {
-    if (carouselRef.current) {
-      const targetIndex = Math.min(pageIndex * cardsPerPage, images.length - 1);
-      const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.offsetWidth;
-      const targetScroll = Math.min(targetIndex * CARD_WIDTH, maxScroll);
-      
-      carouselRef.current.scrollTo({
-        left: targetScroll,
-        behavior: "smooth",
-      });
-      setActiveIndex(targetIndex);
-    }
-  }, [cardsPerPage]);
-
-  // For indicator dots - scroll to specific card
   const scrollToCard = (index: number) => {
     if (carouselRef.current) {
+      const cardWidth = 400 + 24; // card width + gap
       carouselRef.current.scrollTo({
-        left: index * CARD_WIDTH,
+        left: index * cardWidth,
         behavior: "smooth",
       });
-      setActiveIndex(index);
     }
   };
 
-  // Mouse drag handlers - no snap, free scroll
+  // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!carouselRef.current) return;
     setIsDragging(true);
-    hasDragged.current = false;
-    dragStartTime.current = Date.now();
-    setStartX(e.pageX);
+    setStartX(e.pageX - carouselRef.current.offsetLeft);
     setScrollLeft(carouselRef.current.scrollLeft);
-    carouselRef.current.style.cursor = "grabbing";
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !carouselRef.current) return;
     e.preventDefault();
-    const x = e.pageX;
-    const walk = (x - startX) * 1.2;
+    const x = e.pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
     carouselRef.current.scrollLeft = scrollLeft - walk;
-    // Mark as dragged if moved more than 5 pixels
-    if (Math.abs(x - startX) > 5) {
-      hasDragged.current = true;
-    }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    // Snap to nearest card
     if (carouselRef.current) {
-      carouselRef.current.style.cursor = "grab";
+      const cardWidth = 400 + 24;
+      const newIndex = Math.round(carouselRef.current.scrollLeft / cardWidth);
+      setActiveIndex(Math.max(0, Math.min(newIndex, images.length - 1)));
+      scrollToCard(newIndex);
     }
   };
 
@@ -121,17 +78,14 @@ export function ImageCarousel() {
     if (!carousel) return;
 
     const handleScroll = () => {
-      const newIndex = Math.round(carousel.scrollLeft / CARD_WIDTH);
+      const cardWidth = 400 + 24;
+      const newIndex = Math.round(carousel.scrollLeft / cardWidth);
       setActiveIndex(Math.max(0, Math.min(newIndex, images.length - 1)));
     };
 
     carousel.addEventListener("scroll", handleScroll, { passive: true });
     return () => carousel.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Calculate current page for arrows
-  const currentPage = Math.floor(activeIndex / cardsPerPage);
-  const totalPages = Math.ceil(images.length / cardsPerPage);
 
   return (
     <div className="w-full">
@@ -143,49 +97,41 @@ export function ImageCarousel() {
         className="text-center mb-12"
       >
         <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
-          Delivered
+          Delivered Screens
         </h1>
         <p className="text-white/50 text-lg max-w-xl mx-auto">
-          Key screens and features delivered
+          A visual journey through the key screens and features delivered
         </p>
       </motion.div>
 
       {/* Carousel Container */}
       <div className="relative">
-        {/* Navigation Arrows - Page based */}
-        <motion.button
-          onClick={() => scrollToPage(currentPage - 1)}
-          disabled={currentPage === 0}
-          whileHover={currentPage !== 0 ? { scale: 1.15, backgroundColor: "rgba(255,255,255,0.15)" } : {}}
-          whileTap={currentPage !== 0 ? { scale: 0.9 } : {}}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        {/* Navigation Arrows */}
+        <button
+          onClick={() => scrollToCard(Math.max(0, activeIndex - 1))}
+          disabled={activeIndex === 0}
           className={cn(
-            "absolute left-4 top-1/2 -translate-y-1/2 z-20 p-4 rounded-full glass",
-            "shadow-lg shadow-black/20",
-            currentPage === 0
-              ? "opacity-20 cursor-not-allowed"
-              : "cursor-pointer hover:shadow-xl hover:shadow-white/10"
+            "absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all",
+            activeIndex === 0
+              ? "opacity-40 cursor-not-allowed"
+              : "hover:scale-110"
           )}
         >
-          <ChevronLeft className="w-7 h-7 text-white" />
-        </motion.button>
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
 
-        <motion.button
-          onClick={() => scrollToPage(currentPage + 1)}
-          disabled={currentPage >= totalPages - 1}
-          whileHover={currentPage < totalPages - 1 ? { scale: 1.15, backgroundColor: "rgba(255,255,255,0.15)" } : {}}
-          whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        <button
+          onClick={() => scrollToCard(Math.min(images.length - 1, activeIndex + 1))}
+          disabled={activeIndex === images.length - 1}
           className={cn(
-            "absolute right-4 top-1/2 -translate-y-1/2 z-20 p-4 rounded-full glass",
-            "shadow-lg shadow-black/20",
-            currentPage >= totalPages - 1
-              ? "opacity-20 cursor-not-allowed"
-              : "cursor-pointer hover:shadow-xl hover:shadow-white/10"
+            "absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm shadow-lg shadow-black/50 transition-all",
+            activeIndex === images.length - 1
+              ? "opacity-40 cursor-not-allowed"
+              : "hover:scale-110"
           )}
         >
-          <ChevronRight className="w-7 h-7 text-white" />
-        </motion.button>
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
 
         {/* Carousel */}
         <div
@@ -195,11 +141,11 @@ export function ImageCarousel() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           className={cn(
-            "flex gap-6 overflow-x-auto px-8 py-4 hide-scrollbar cursor-grab no-select",
+            "flex gap-6 overflow-x-auto px-8 py-4 hide-scrollbar cursor-grab",
             isDragging && "cursor-grabbing"
           )}
           style={{
-            scrollBehavior: "smooth",
+            scrollSnapType: "x mandatory",
           }}
         >
           {images.map((image, index) => (
@@ -216,17 +162,11 @@ export function ImageCarousel() {
                 "flex-shrink-0 w-[340px] md:w-[400px] group",
                 "scroll-snap-align-center"
               )}
-              style={{ scrollSnapAlign: "start" }}
+              style={{ scrollSnapAlign: "center" }}
             >
               {/* Card */}
               <div
-                onMouseDown={handleCardMouseDown}
-                onClick={() => {
-                  // Only open if not dragging (moved less than 5px)
-                  if (!hasDragged.current) {
-                    openLightbox(index);
-                  }
-                }}
+                onClick={() => openLightbox(index)}
                 className={cn(
                   "relative rounded-2xl overflow-hidden glass transition-smooth",
                   "hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/5"

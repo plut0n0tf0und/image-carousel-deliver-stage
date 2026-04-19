@@ -76,9 +76,9 @@ export function Lightbox({
                 e.stopPropagation();
                 onPrev();
               }}
-              className="absolute left-6 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full glass hover:bg-white/10 transition-smooth group"
+              className="absolute left-6 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm shadow-lg shadow-black/50 transition-all"
             >
-              <ChevronLeft className="w-8 h-8 text-white/80 group-hover:text-white" />
+              <ChevronLeft className="w-8 h-8 text-white" />
             </button>
           )}
 
@@ -89,9 +89,9 @@ export function Lightbox({
                 e.stopPropagation();
                 onNext();
               }}
-              className="absolute right-6 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full glass hover:bg-white/10 transition-smooth group"
+              className="absolute right-6 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm shadow-lg shadow-black/50 transition-all"
             >
-              <ChevronRight className="w-8 h-8 text-white/80 group-hover:text-white" />
+              <ChevronRight className="w-8 h-8 text-white" />
             </button>
           )}
 

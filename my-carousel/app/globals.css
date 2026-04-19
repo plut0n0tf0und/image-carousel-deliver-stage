@@ -71,17 +71,3 @@ html {
 .transition-smooth {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* Disable selection on carousel and images */
-.no-select {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-img {
-  user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
-}
