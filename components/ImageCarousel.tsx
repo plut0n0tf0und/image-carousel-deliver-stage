@@ -13,6 +13,7 @@ export function ImageCarousel() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragActive = useRef(false);       // ref copy — no re-render lag
+  const isPointerDown = useRef(false);    // tracks if mouse button is held
   const dragDistance = useRef(0);
   const startX = useRef(0);
   const scrollLeftRef = useRef(0);
@@ -55,9 +56,10 @@ export function ImageCarousel() {
   // Drag handlers — pointer events work for mouse + touch, all logic in refs (no re-render during drag)
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!carouselRef.current) return;
-    if (e.button !== 0) return; // left click only
+    if (e.button !== 0) return;
     if (rafId.current) cancelAnimationFrame(rafId.current);
-    dragActive.current = false; // only activate on actual move
+    isPointerDown.current = true;
+    dragActive.current = false;
     dragDistance.current = 0;
     startX.current = e.clientX;
     scrollLeftRef.current = carouselRef.current.scrollLeft;
@@ -67,9 +69,8 @@ export function ImageCarousel() {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!carouselRef.current) return;
+    if (!isPointerDown.current || !carouselRef.current) return;
     const walk = e.clientX - startX.current;
-    // Only start drag after moving 4px — preserves clean clicks
     if (!dragActive.current && Math.abs(walk) < 4) return;
     if (!dragActive.current) {
       dragActive.current = true;
@@ -88,8 +89,9 @@ export function ImageCarousel() {
   };
 
   const handlePointerUp = () => {
-    if (!carouselRef.current) return;
-    if (!dragActive.current) return; // was a clean click, do nothing
+    if (!isPointerDown.current || !carouselRef.current) return;
+    isPointerDown.current = false;
+    if (!dragActive.current) return;
     dragActive.current = false;
     setIsDragging(false);
 
