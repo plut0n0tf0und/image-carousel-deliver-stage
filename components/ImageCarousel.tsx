@@ -12,9 +12,13 @@ export function ImageCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
   const dragDistance = useRef(0);
+  const startX = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const velX = useRef(0);
+  const lastX = useRef(0);
+  const lastT = useRef(0);
+  const rafId = useRef<number | null>(null);
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -49,30 +53,51 @@ export function ImageCarousel() {
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!carouselRef.current) return;
+    if (rafId.current) cancelAnimationFrame(rafId.current);
     setIsDragging(true);
     dragDistance.current = 0;
-    setStartX(e.pageX - carouselRef.current.offsetLeft);
-    setScrollLeft(carouselRef.current.scrollLeft);
+    startX.current = e.pageX - carouselRef.current.offsetLeft;
+    scrollLeftRef.current = carouselRef.current.scrollLeft;
+    lastX.current = e.pageX;
+    lastT.current = performance.now();
+    velX.current = 0;
+    // Disable snap during drag for smooth feel
+    carouselRef.current.style.scrollSnapType = "none";
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !carouselRef.current) return;
     e.preventDefault();
     const x = e.pageX - carouselRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    dragDistance.current = Math.abs(x - startX);
-    carouselRef.current.scrollLeft = scrollLeft - walk;
+    const walk = x - startX.current;
+    dragDistance.current = Math.abs(walk);
+    carouselRef.current.scrollLeft = scrollLeftRef.current - walk;
+
+    const now = performance.now();
+    const dt = now - lastT.current;
+    if (dt > 0) velX.current = (e.pageX - lastX.current) / dt;
+    lastX.current = e.pageX;
+    lastT.current = now;
   };
 
   const handleMouseUp = () => {
+    if (!carouselRef.current) return;
     setIsDragging(false);
-    // Snap to nearest card
-    if (carouselRef.current) {
-      const cardWidth = 400 + 24;
-      const newIndex = Math.round(carouselRef.current.scrollLeft / cardWidth);
-      setActiveIndex(Math.max(0, Math.min(newIndex, images.length - 1)));
-      scrollToCard(newIndex);
-    }
+
+    const carousel = carouselRef.current;
+    const cardWidth = 400 + 24;
+    const momentum = velX.current * 120; // project forward
+    const targetScroll = carousel.scrollLeft - momentum;
+    const newIndex = Math.max(0, Math.min(
+      Math.round(targetScroll / cardWidth),
+      images.length - 1
+    ));
+
+    // Re-enable snap then scroll
+    carousel.style.scrollSnapType = "x mandatory";
+    setActiveIndex(newIndex);
+    scrollToCard(newIndex);
+    velX.current = 0;
   };
 
   // Update active index on scroll
